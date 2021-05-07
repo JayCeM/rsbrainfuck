@@ -4,4 +4,4 @@ This project is currently under construction. It aims to implement an efficient 
 
 # License
 
-This project is licensed under GPL v3. For further information see the LICENSE file.
+This project is licensed under GPL v3. For further information see the [LICENSE](LICENSE) file.
