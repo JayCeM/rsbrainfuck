@@ -1,15 +1,18 @@
 use std::collections::VecDeque;
 
 #[derive(Debug, PartialEq, Eq)]
-// This struct implements a memoryband that has an unlimited amount of memory cells to the left and
-// right. Each memory cell holds an `ì64` value.
+/// This struct implements a memoryband that has an unlimited amount of memory cells to the left and
+/// right. Each memory cell holds a value of type `i64`.
+/// The memoryband has one reading head that can be moved left or right. It can read and write to
+/// the memory cell below it.
+/// Each memory cell is initialized to `0`.
 pub struct MemoryBand {
     band: VecDeque<i64>,
     current_index: usize,
 }
 
 impl MemoryBand {
-    // Creates a new Memoryband instance
+    /// Creates a new Memoryband instance
     pub fn new() -> MemoryBand {
         MemoryBand {
             band: vec![0].into_iter().collect(),
@@ -17,20 +20,23 @@ impl MemoryBand {
         }
     }
 
-    // Outputs the value that is currently readable
+    /// Outputs the value that is currently readable
     pub fn read(&self) -> i64 {
         self.band[self.current_index]
     }
 
+    /// Writes `int` to the current cell
     pub fn write(&mut self, int: i64) {
         self.band[self.current_index] = int;
     }
 
+    /// Adds `int` to the current cell
     pub fn add(&mut self, int: i64) {
         self.band[self.current_index] += int;
     }
 
-    pub fn move_right(&mut self, moves: usize) {
+    /// Moves the reading head right by `moves` amount
+    fn move_right(&mut self, moves: usize) {
         self.current_index += moves;
 
         if self.current_index >= self.band.len() {
@@ -41,7 +47,8 @@ impl MemoryBand {
         }
     }
 
-    pub fn move_left(&mut self, moves: usize) {
+    /// Moves the reading head left by `moves` amount
+    fn move_left(&mut self, moves: usize) {
         if self.current_index == 0 {
             for _ in 0..moves {
                 self.band.push_front(0);
@@ -53,6 +60,17 @@ impl MemoryBand {
             return self.move_left(moves_later);
         }
         self.current_index -= moves;
+    }
+
+    /// Moves the reading head left by `moves` amount.
+    /// Positive values correspond to moving right, negative values to moving left.
+    pub fn move_head(&mut self, moves: isize) {
+        use std::cmp::Ordering::*;
+        match moves.cmp(&0) {
+            Less => self.move_left(-moves as usize),
+            Equal => (),
+            Greater => self.move_right(moves as usize),
+        }
     }
 }
 

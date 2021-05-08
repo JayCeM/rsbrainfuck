@@ -3,5 +3,5 @@
 //! # Usage
 //!
 //! The central piece if this interpreter is the `SourceCode` struct and its `run()` method.
-mod memoryband;
+pub mod memoryband;
 pub mod sourcecode;

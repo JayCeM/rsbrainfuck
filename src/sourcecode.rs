@@ -1,11 +1,8 @@
+use super::memoryband::MemoryBand;
 use std::str::FromStr;
 use BfCommand::*;
 
-/// This struct is created mainly using its `FromStr` implementation, e.g. by invoking
-/// `from_str(s)` or `s.parse()`. Use `code.run()` to run the SourceCode.
-#[derive(Debug, PartialEq)]
-pub struct SourceCode(Vec<BfCommand>);
-
+/// The variants of this enum each represent a brainfuck command.
 #[derive(Debug, PartialEq)]
 enum BfCommand {
     Move(isize),
@@ -13,6 +10,31 @@ enum BfCommand {
     Print,
     Read,
     Loop(SourceCode),
+}
+
+/// This struct is created mainly using its `FromStr` implementation, e.g. by invoking
+/// `from_str(s)` or `s.parse()`. Use `code.run()` to run the SourceCode.
+#[derive(Debug, PartialEq)]
+pub struct SourceCode(Vec<BfCommand>);
+
+impl SourceCode {
+    /// Runs the brainfuck source code on an empty memoryband
+    pub fn run(&self) {
+        let mut band = MemoryBand::new();
+        self.run_on_band(&mut band);
+    }
+
+    /// Runs the brainfuck source code on the given `band` memoryband
+    pub fn run_on_band(&self, band: &mut MemoryBand) {
+        for c in self.0.iter() {
+            match c {
+                Move(i) => band.move_head(*i),
+                Add(i) => band.add(*i),
+                Print => print!("{}", band.read() as u8 as char),
+                _ => (),
+            }
+        }
+    }
 }
 
 impl FromStr for SourceCode {
