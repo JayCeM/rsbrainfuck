@@ -1,12 +1,15 @@
 use std::collections::VecDeque;
 
 #[derive(Debug, PartialEq, Eq)]
+// This struct implements a memoryband that has an unlimited amount of memory cells to the left and
+// right. Each memory cell holds an `ì64` value.
 pub struct MemoryBand {
     band: VecDeque<i64>,
     current_index: usize,
 }
 
 impl MemoryBand {
+    // Creates a new Memoryband instance
     pub fn new() -> MemoryBand {
         MemoryBand {
             band: vec![0].into_iter().collect(),
@@ -14,6 +17,7 @@ impl MemoryBand {
         }
     }
 
+    // Outputs the value that is currently readable
     pub fn read(&self) -> i64 {
         self.band[self.current_index]
     }

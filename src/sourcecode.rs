@@ -1,11 +1,13 @@
 use std::str::FromStr;
 use BfCommand::*;
 
+/// This struct is created mainly using its `FromStr` implementation, e.g. by invoking
+/// `from_str(s)` or `s.parse()`. Use `code.run()` to run the SourceCode.
 #[derive(Debug, PartialEq)]
 pub struct SourceCode(Vec<BfCommand>);
 
 #[derive(Debug, PartialEq)]
-pub enum BfCommand {
+enum BfCommand {
     Move(isize),
     Add(i64),
     Print,
@@ -17,17 +19,12 @@ impl FromStr for SourceCode {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        //let mut is_bracket_open = false;
-
         let mut commands = Vec::new();
-
-        let mut iter = s.char_indices();
 
         // start_index: index of the opening bracket
         let find_matching_closing_bracket = |start_index| {
             let mut count: usize = 1;
-            let mut iter = s.char_indices().skip(start_index + 1);
-            for (i, c) in iter {
+            for (i, c) in s.char_indices().skip(start_index + 1) {
                 match c {
                     '[' => count += 1,
                     ']' => count -= 1,
@@ -43,6 +40,8 @@ impl FromStr for SourceCode {
                 start_index
             ))
         };
+
+        let mut iter = s.char_indices();
 
         // remove Move(0), Add(0) ?
         while let Some((i, c)) = iter.next() {
@@ -83,11 +82,11 @@ impl FromStr for SourceCode {
                 '[' => {
                     let i_close = find_matching_closing_bracket(i)?;
                     println!("loop: from {} to {}", i + 1, i_close);
-                    let LoopCode = Self::from_str(&s[i + 1..i_close])?;
-                    for _ in 0..LoopCode.0.len() + 2 {
+                    let loop_code = Self::from_str(&s[i + 1..i_close])?;
+                    for _ in 0..loop_code.0.len() + 2 {
                         iter.next();
                     }
-                    commands.push(Loop(LoopCode));
+                    commands.push(Loop(loop_code));
                 }
                 ']' => {
                     return Err(format!(
