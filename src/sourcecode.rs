@@ -95,13 +95,7 @@ impl FromStr for SourceCode {
                     ))
                 }
 
-                _ => {
-                    // omitt instead of Err ?
-                    return Err(format!(
-                        "character '{}' at index {} is not a valid brainfuck command",
-                        c, i
-                    ));
-                }
+                _ => continue,
             }
         }
 
@@ -124,12 +118,9 @@ mod test {
 
     #[test]
     fn test_from_str_err() {
-        let source = "<<+++D+++";
-        let code = source.parse::<SourceCode>();
+        let code = "<<+++\nD\n+++".parse::<SourceCode>();
 
-        let expected = Err(String::from(
-            "character 'D' at index 5 is not a valid brainfuck command",
-        ));
+        let expected = "<<++++++".parse::<SourceCode>();
 
         assert_eq!(code, expected);
     }
