@@ -1,4 +1,5 @@
 use super::memoryband::MemoryBand;
+use char_stream::CharStream;
 use std::str::FromStr;
 use BfCommand::*;
 
@@ -26,15 +27,57 @@ impl SourceCode {
 
     /// Runs the brainfuck source code on the given `band` memoryband
     pub fn run_on_band(&self, band: &mut MemoryBand) {
+        self.run_loop_band(band);
+        println!("");
+    }
+
+    fn run_loop_band(&self, band: &mut MemoryBand) {
+        let mut stdin = CharStream::from_stdin();
         for c in self.0.iter() {
             match c {
                 Move(i) => band.move_head(*i),
                 Add(i) => band.add(*i),
                 Print => print!("{}", band.read() as u8 as char),
-                _ => (),
+                Read => {
+                    println!("\nReading from stdin:");
+                        match stdin.next() {
+                        Some(c) => band.write(c as i64),
+                        None => band.write(0),
+                    }
+                },
+                Loop(code) => {
+                    while band.read() != 0 {
+                        code.run_loop_band(band);
+                    }
+                }
             }
         }
     }
+}
+
+/// s: string slice to find the brackets in
+/// start_index: index of the opening bracket
+fn find_matching_closing_bracket(s: &str, start_index: usize) -> Result<usize, String> {
+    let mut iter = s.char_indices().skip(start_index);
+    match iter.next() {
+        Some((_, '[')) => (),
+        _ => return Err(format!("No opening bracket at index {}.", start_index)),
+    };
+    let mut count: usize = 1;
+    for (i, c) in iter {
+        match c {
+            '[' => count += 1,
+            ']' => count -= 1,
+            _ => continue,
+        }
+        if count == 0 {
+            return Ok(i);
+        }
+    }
+    Err(format!(
+        "No matching bracket was found for '[' at position {}.",
+        start_index
+    ))
 }
 
 impl FromStr for SourceCode {
@@ -44,24 +87,24 @@ impl FromStr for SourceCode {
         let mut commands = Vec::new();
 
         // start_index: index of the opening bracket
-        let find_matching_closing_bracket = |start_index| {
-            let mut count: usize = 1;
-            for (i, c) in s.char_indices().skip(start_index + 1) {
-                match c {
-                    '[' => count += 1,
-                    ']' => count -= 1,
-                    _ => continue,
-                }
-                if count == 0 {
-                    return Ok(i);
-                }
-            }
+        //let find_matching_closing_bracket = |start_index| {
+        //    let mut count: usize = 1;
+        //    for (i, c) in s.char_indices().skip(start_index + 1) {
+        //        match c {
+        //            '[' => count += 1,
+        //            ']' => count -= 1,
+        //            _ => continue,
+        //        }
+        //        if count == 0 {
+        //            return Ok(i);
+        //        }
+        //    }
 
-            Err(format!(
-                "No matching bracket was found for '[' at position {}.",
-                start_index
-            ))
-        };
+        //    Err(format!(
+        //        "No matching bracket was found for '[' at position {}.",
+        //        start_index
+        //    ))
+        //};
 
         let mut iter = s.char_indices();
 
@@ -102,8 +145,8 @@ impl FromStr for SourceCode {
                 ',' => commands.push(Read),
 
                 '[' => {
-                    let i_close = find_matching_closing_bracket(i)?;
-                    println!("loop: from {} to {}", i + 1, i_close);
+                    let i_close = find_matching_closing_bracket(s, i)?;
+                    //println!("loop: from {} to {}", i + 1, i_close);
                     let loop_code = Self::from_str(&s[i + 1..i_close])?;
                     for _ in 0..loop_code.0.len() + 2 {
                         iter.next();
@@ -148,6 +191,15 @@ mod test {
     }
 
     #[test]
+    fn test_find_matching_closing_bracket() {
+        let text = "0[23]5[[8]][";
+        assert_eq!(find_matching_closing_bracket(text, 0), Err(String::from("No opening bracket at index 0.")));
+        assert_eq!(find_matching_closing_bracket(text, 1), Ok(4));
+        assert_eq!(find_matching_closing_bracket(text, 6), Ok(10));
+        assert_eq!(find_matching_closing_bracket(text, 7), Ok(9));
+        assert_eq!(find_matching_closing_bracket(text, 11), Err(String::from("No matching bracket was found for '[' at position 11.")));
+    }
+    #[test]
     fn test_loop_no_opening_bracket() {
         let code = "<<+++].".parse::<SourceCode>();
 
@@ -178,6 +230,37 @@ mod test {
         ]));
 
         assert_eq!(code, expected);
+    }
+
+    #[test]
+    fn test_from_str_many_loops() {
+        let code1 = "+[--]++[--]+".parse::<SourceCode>();
+
+        let expected1 = Ok(SourceCode(vec![
+            Add(1),
+            Loop(SourceCode(vec![Add(-2)])),
+            Add(2),
+            Loop(SourceCode(vec![Add(-2)])),
+            Add(1),
+        ]));
+
+        let code2 = "+[-[.-]+].".parse::<SourceCode>();
+
+        let expected2 = Ok(SourceCode(vec![
+                                      Add(1),
+                                      Loop(SourceCode(vec![
+                                                      Add(-1),
+                                                      Loop(SourceCode(vec![
+                                                                      Print,
+                                                                      Add(-1),
+                                                      ])),
+                                                      Add(1)
+                                      ])),
+                                      Print]));
+
+
+        assert_eq!(code1, expected1);
+        assert_eq!(code2, expected2);
     }
 
     #[test]
