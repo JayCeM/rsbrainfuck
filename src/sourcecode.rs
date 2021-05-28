@@ -90,6 +90,7 @@ fn extract_loop_code(s: &str, start_index: usize) -> Result<(SourceCode, usize),
         _ => return Err(format!("No opening bracket at index {}.", start_index)),
     };
     let close_index = find_matching_closing_bracket(s, start_index)?;
+    println!("{}", &s[start_index+1..close_index]);
     Ok((SourceCode::from_str(&s[start_index + 1..close_index])?, close_index - start_index))
 }
 
@@ -209,8 +210,6 @@ mod test {
 
         assert_eq!(code, expected);
     }
-
-        
 
     #[test]
     fn test_loop_no_opening_bracket() {
