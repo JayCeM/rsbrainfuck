@@ -80,31 +80,24 @@ fn find_matching_closing_bracket(s: &str, start_index: usize) -> Result<usize, S
     ))
 }
 
+/// s: string slice to extract the loop from
+/// start_index: index of the opening bracket
+/// output: OK: the extracted loop Sourcecode and a length of the underlying string segment
+fn extract_loop_code(s: &str, start_index: usize) -> Result<(SourceCode, usize), String> {
+    let mut iter = s.chars().skip(start_index);
+    match iter.next() {
+        Some('[') => (),
+        _ => return Err(format!("No opening bracket at index {}.", start_index)),
+    };
+    let close_index = find_matching_closing_bracket(s, start_index)?;
+    Ok((SourceCode::from_str(&s[start_index + 1..close_index])?, close_index - start_index))
+}
+
 impl FromStr for SourceCode {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut commands = Vec::new();
-
-        // start_index: index of the opening bracket
-        //let find_matching_closing_bracket = |start_index| {
-        //    let mut count: usize = 1;
-        //    for (i, c) in s.char_indices().skip(start_index + 1) {
-        //        match c {
-        //            '[' => count += 1,
-        //            ']' => count -= 1,
-        //            _ => continue,
-        //        }
-        //        if count == 0 {
-        //            return Ok(i);
-        //        }
-        //    }
-
-        //    Err(format!(
-        //        "No matching bracket was found for '[' at position {}.",
-        //        start_index
-        //    ))
-        //};
 
         let mut iter = s.char_indices();
 
@@ -145,10 +138,8 @@ impl FromStr for SourceCode {
                 ',' => commands.push(Read),
 
                 '[' => {
-                    let i_close = find_matching_closing_bracket(s, i)?;
-                    //println!("loop: from {} to {}", i + 1, i_close);
-                    let loop_code = Self::from_str(&s[i + 1..i_close])?;
-                    for _ in 0..loop_code.0.len() + 2 {
+                    let (loop_code, len) = extract_loop_code(s, i)?;
+                    for _ in 0..len {
                         iter.next();
                     }
                     commands.push(Loop(loop_code));
@@ -199,6 +190,28 @@ mod test {
         assert_eq!(find_matching_closing_bracket(text, 7), Ok(9));
         assert_eq!(find_matching_closing_bracket(text, 11), Err(String::from("No matching bracket was found for '[' at position 11.")));
     }
+    
+    #[test]
+    fn test_ectract_loop_code() {
+        let code = ".[.[+ ] ].".parse::<SourceCode>();
+
+        let expected: Result<SourceCode, String> = Ok(SourceCode(
+                vec![
+                Print,
+                Loop(SourceCode(
+                        vec![
+                        Print,
+                        Loop(SourceCode(
+                                vec![
+                                Add(1)]))
+                        ])),
+                Print]));
+
+        assert_eq!(code, expected);
+    }
+
+        
+
     #[test]
     fn test_loop_no_opening_bracket() {
         let code = "<<+++].".parse::<SourceCode>();
