@@ -9,7 +9,7 @@ pub struct InputBuffer {
 
 impl InputBuffer {
     pub fn new() -> InputBuffer {
-        let buffer = VecDeque::with_capacity(100);
+        let buffer = VecDeque::new();
         InputBuffer {
             buffer,
             stdin: stdin(),
