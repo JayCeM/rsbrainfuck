@@ -6,22 +6,26 @@
 
 use crate::memoryband::*;
 use crate::sourcecode::*;
+use crate::inputbuffer::*;
 use std::error::Error;
 use std::fs;
 use std::io;
 
 pub mod memoryband;
 pub mod sourcecode;
+pub mod inputbuffer;
 
 pub fn run_file(s: String) -> Result<(), Box<dyn Error>> {
     let code = fs::read_to_string(s)?.parse::<SourceCode>()?;
-    code.run();
+    let mut stdin = InputBuffer::new();
+    code.run(&mut stdin);
     Ok(())
 }
 
 pub fn run_interpreter() {
     println!("Welcome to the rsbrainfuck interpreter. Type 'exit' to exit the interpreter");
     let mut band = MemoryBand::new();
+    let mut stdin = InputBuffer::new();
     loop {
         let mut string = String::new();
         if let Err(e) = io::stdin().read_line(&mut string) {
@@ -36,7 +40,7 @@ pub fn run_interpreter() {
         match string.parse::<SourceCode>() {
             Ok(code) => {
                 print!("[out]: ");
-                code.run_on_band(&mut band);
+                code.run_on_band(&mut band, &mut stdin);
             },
             Err(e) => eprintln!("{}", e),
         };

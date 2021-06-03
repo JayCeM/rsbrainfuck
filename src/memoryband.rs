@@ -2,12 +2,12 @@ use std::collections::VecDeque;
 
 #[derive(Debug, PartialEq, Eq)]
 /// This struct implements a memoryband that has an unlimited amount of memory cells to the left and
-/// right. Each memory cell holds a value of type `i64`.
+/// right. Each memory cell holds a value of type `u8`.
 /// The memoryband has one reading head that can be moved left or right. It can read and write to
 /// the memory cell below it.
 /// Each memory cell is initialized to `0`.
 pub struct MemoryBand {
-    band: VecDeque<i64>,
+    band: VecDeque<u8>,
     current_index: usize,
 }
 
@@ -21,18 +21,18 @@ impl MemoryBand {
     }
 
     /// Outputs the value that is currently readable
-    pub fn read(&self) -> i64 {
+    pub fn read(&self) -> u8 {
         self.band[self.current_index]
     }
 
     /// Writes `int` to the current cell
-    pub fn write(&mut self, int: i64) {
+    pub fn write(&mut self, int: u8) {
         self.band[self.current_index] = int;
     }
 
     /// Adds `int` to the current cell
-    pub fn add(&mut self, int: i64) {
-        self.band[self.current_index] += int;
+    pub fn add(&mut self, int: u8) {
+        self.band[self.current_index] = self.band[self.current_index].overflowing_add(int).0;
     }
 
     /// Moves the reading head right by `moves` amount

@@ -1,5 +1,6 @@
 use super::memoryband::MemoryBand;
-use char_stream::CharStream;
+//use super::inputbuffer::InputBuffer;
+//use char_stream::CharStream;
 use std::str::FromStr;
 use BfCommand::*;
 
@@ -7,7 +8,7 @@ use BfCommand::*;
 #[derive(Debug, PartialEq)]
 enum BfCommand {
     Move(isize),
-    Add(i64),
+    Add(u8),
     Print,
     Read,
     Loop(SourceCode),
@@ -15,43 +16,51 @@ enum BfCommand {
 
 /// This struct is created mainly using its `FromStr` implementation, e.g. by invoking
 /// `from_str(s)` or `s.parse()`. Use `code.run()` to run the SourceCode.
+/// The Sourcecode can be executed using the [`SourceCode::run()`] or [`SourceCode::run_on_band()`] methods.
+/// One Specialty of these functions is that they accept every Iterator over [`char`] as their
+/// StdIn, use [`super::inputbuffer::InputBuffer`] for the standard StdIn-behavior.
 #[derive(Debug, PartialEq)]
 pub struct SourceCode(Vec<BfCommand>);
 
 impl SourceCode {
-    /// Runs the brainfuck source code on an empty memoryband
-    pub fn run(&self) {
+    /// Runs the brainfuck source code on an empty memoryband.
+    ///
+    /// Pass any Iterator over [`char`] as stdin to the method, 
+    /// use [`super::inputbuffer::InputBuffer`] for the standard StdIn-behavior.
+    pub fn run<I: Iterator<Item=char>>(&self, stdin: &mut I) {
         let mut band = MemoryBand::new();
-        self.run_on_band(&mut band);
+        self.run_on_band(&mut band, stdin);
     }
 
     /// Runs the brainfuck source code on the given `band` memoryband.
-    /// Additionally the stdout actually gets displayed to the user by printing a newline symbol.
-    /// Leaving the newline out caused problems where the stdout would be presented delayed to the
-    /// user.
-    pub fn run_on_band(&self, band: &mut MemoryBand) {
-        self.run_loop_band(band);
+    ///
+    /// Pass any Iterator over [`char`] as stdin to the method, 
+    /// use [`super::inputbuffer::InputBuffer`] for the standard StdIn-behavior.
+    pub fn run_on_band<I: Iterator<Item=char>>(&self, band: &mut MemoryBand, stdin: &mut I) {
+        self.run_loop_band(band, stdin);
         println!("");
     }
 
     /// Runs the brainfuck source code on the given `band` memoryband.
-    fn run_loop_band(&self, band: &mut MemoryBand) {
-        let mut stdin = CharStream::from_stdin();
+    /// This method got outsourced form [run_on_band`] because taht method needs to print one
+    /// newline symbol at the end of the computaton.
+    /// Leaving the newline out caused problems where the stdout would be presented delayed to the
+    /// user.
+    fn run_loop_band<I: Iterator<Item=char>>(&self, band: &mut MemoryBand, stdin: &mut I) {
         for c in self.0.iter() {
             match c {
                 Move(i) => band.move_head(*i),
                 Add(i) => band.add(*i),
-                Print => print!("{}", band.read() as u8 as char),
+                Print => print!("{}", band.read() as char),
                 Read => {
-                    println!("\nReading from stdin:");
                         match stdin.next() {
-                        Some(c) => band.write(c as i64),
+                        Some(c) => band.write(c as u8),
                         None => band.write(0),
                     }
                 },
                 Loop(code) => {
                     while band.read() != 0 {
-                        code.run_loop_band(band);
+                        code.run_loop_band(band, stdin);
                     }
                 }
             }
@@ -133,9 +142,9 @@ impl FromStr for SourceCode {
                 '-' => match commands.last() {
                     Some(&Add(d)) => {
                         commands.pop();
-                        commands.push(Add(d - 1));
+                        commands.push(Add(d.overflowing_sub(1).0));
                     }
-                    _ => commands.push(Add(-1)),
+                    _ => commands.push(Add(u8::MAX)), // u8::MAX <=> -1
                 },
 
                 '.' => commands.push(Print),
