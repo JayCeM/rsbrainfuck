@@ -25,12 +25,16 @@ impl SourceCode {
         self.run_on_band(&mut band);
     }
 
-    /// Runs the brainfuck source code on the given `band` memoryband
+    /// Runs the brainfuck source code on the given `band` memoryband.
+    /// Additionally the stdout actually gets displayed to the user by printing a newline symbol.
+    /// Leaving the newline out caused problems where the stdout would be presented delayed to the
+    /// user.
     pub fn run_on_band(&self, band: &mut MemoryBand) {
         self.run_loop_band(band);
         println!("");
     }
 
+    /// Runs the brainfuck source code on the given `band` memoryband.
     fn run_loop_band(&self, band: &mut MemoryBand) {
         let mut stdin = CharStream::from_stdin();
         for c in self.0.iter() {
