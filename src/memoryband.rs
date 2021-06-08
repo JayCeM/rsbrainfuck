@@ -1,15 +1,25 @@
 use std::collections::VecDeque;
+use std::cmp::Ordering::*;
 
 /// A memoryband is a sequential band of memorycells.
 /// Each memory cell holds a value of type [`u8`].
 /// The memoryband has one reading head that can be moved left or right. It can read and write to
 /// the memory cell below it.
 /// Each memory cell is initialized to `0`.
+/// The minimal Implementation requires implementations of all functions except [`MemoryBand::add()`]
 pub trait MemoryBand {
+    /// Creates a new Memoryband instance
     fn new() -> Self;
+    /// Outputs the value that is currently readable
     fn read(&self) -> u8;
+    /// Writes `int` to the current cell
     fn write(&mut self, int: u8);
-    fn add(&mut self, int: u8);
+    /// Adds `int` to the current cell
+    fn add(&mut self, int: u8){
+        self.write(self.read().overflowing_add(int).0);
+    }
+    /// Moves the reading head left by `moves` amount.
+    /// Positive values correspond to moving right, negative values to moving left.
     fn move_head(&mut self, moves: isize);
 }
 
@@ -51,7 +61,6 @@ impl InfiniteMemoryBand {
     }
 }
 
-
 impl MemoryBand for InfiniteMemoryBand {
     /// Creates a new Memoryband instance
     fn new() -> InfiniteMemoryBand {
@@ -79,17 +88,67 @@ impl MemoryBand for InfiniteMemoryBand {
     /// Moves the reading head left by `moves` amount.
     /// Positive values correspond to moving right, negative values to moving left.
     fn move_head(&mut self, moves: isize) {
-        use std::cmp::Ordering::*;
         match moves.cmp(&0) {
             Less => self.move_left(-moves as usize),
-            Equal => (),
             Greater => self.move_right(moves as usize),
+            _ => (),
         }
     }
 }
 
+pub struct FiniteMemoryBand {
+    band: [u8; 30_000],
+    current_index: usize,
+}
+
+impl FiniteMemoryBand {
+    fn move_left(&mut self, moves: usize) {
+        match moves.cmp(&self.current_index) {
+            Greater => panic!("The maximum length of the band was reached"),
+            _ => self.current_index -= moves,
+        }
+    }
+
+    fn move_right(&mut self, moves: usize) {
+        let next_index = self.current_index + moves;
+        if next_index >= 30_000 {
+            panic!("The maximum length of the band was reached");
+        }
+        self.current_index = next_index;
+    }
+}
+
+
+impl MemoryBand for FiniteMemoryBand {
+    fn new() -> FiniteMemoryBand {
+        FiniteMemoryBand {
+            band: [0; 30_000],
+            current_index: 15_000,
+        }
+    }
+
+    fn read(&self) -> u8 {
+        self.band[self.current_index]
+    }
+
+    fn write(&mut self, int: u8) {
+        self.band[self.current_index] = int;
+    }
+
+    fn move_head(&mut self, moves: isize) {
+        match moves.cmp(&0) {
+            Less => self.move_left(-moves as usize),
+            Greater => self.move_right(moves as usize),
+            _ => (),
+        }
+    }
+}
+
+
+    
+
 #[cfg(test)]
-mod test {
+mod test_infinite {
     const NEG1: u8 = u8::MAX;
     use super::*;
     #[test]
@@ -165,5 +224,13 @@ mod test {
             current_index: 0,
         };
         assert_eq!(band, expected);
+    }
+}
+
+#[cfg(test)]
+mod test_finite {
+    #[test]
+    #[should_panic]
+    fn index_neg1() {
     }
 }
