@@ -96,6 +96,7 @@ impl MemoryBand for InfiniteMemoryBand {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct FiniteMemoryBand {
     band: [u8; 30_000],
     current_index: usize,
@@ -229,8 +230,47 @@ mod test_infinite {
 
 #[cfg(test)]
 mod test_finite {
+    use super::*;
+
     #[test]
     #[should_panic]
     fn index_neg1() {
+        let mut band = FiniteMemoryBand::new();
+        band.move_head(-15_001);
+    }
+    #[test]
+    #[should_panic]
+    fn index_30_000() {
+        let mut band = FiniteMemoryBand::new();
+        band.move_head(15_000);
+    }
+
+    #[test]
+    fn move_head() {
+        let mut band1 = FiniteMemoryBand::new();
+        let mut band2 = FiniteMemoryBand::new();
+
+        band1.move_head(3);
+        band2.move_head(-3);
+
+        assert_eq!(band1.current_index, 15_000+3);
+        assert_eq!(band2.current_index, 15_000-3);
+    }
+
+    #[test]
+    fn read_write_move() {
+        let mut band = FiniteMemoryBand::new();
+
+        band.move_head(1);
+        
+        band.write(50);
+        let expected = {
+            let mut arr = [0; 30_000];
+            arr[15_001] = 50;
+            arr
+        };
+        assert_eq!(band.band, expected);
+
+        assert_eq!(band.read(), 50);
     }
 }
