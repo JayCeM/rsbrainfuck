@@ -1,4 +1,4 @@
-use super::memoryband::MemoryBand;
+use super::memoryband::*;
 //use super::inputbuffer::InputBuffer;
 //use char_stream::CharStream;
 use std::str::FromStr;
@@ -28,7 +28,7 @@ impl SourceCode {
     /// Pass any Iterator over [`char`] as stdin to the method, 
     /// use [`super::inputbuffer::InputBuffer`] for the standard StdIn-behavior.
     pub fn run<I: Iterator<Item=char>>(&self, stdin: &mut I) {
-        let mut band = MemoryBand::new();
+        let mut band = InfiniteMemoryBand::new();
         self.run_on_band(&mut band, stdin);
     }
 
@@ -36,7 +36,7 @@ impl SourceCode {
     ///
     /// Pass any Iterator over [`char`] as stdin to the method, 
     /// use [`super::inputbuffer::InputBuffer`] for the standard StdIn-behavior.
-    pub fn run_on_band<I: Iterator<Item=char>>(&self, band: &mut MemoryBand, stdin: &mut I) {
+    pub fn run_on_band<I: Iterator<Item=char>>(&self, band: &mut InfiniteMemoryBand, stdin: &mut I) {
         self.run_loop_band(band, stdin);
         println!("");
     }
@@ -46,7 +46,7 @@ impl SourceCode {
     /// newline symbol at the end of the computaton.
     /// Leaving the newline out caused problems where the stdout would be presented delayed to the
     /// user.
-    fn run_loop_band<I: Iterator<Item=char>>(&self, band: &mut MemoryBand, stdin: &mut I) {
+    fn run_loop_band<I: Iterator<Item=char>>(&self, band: &mut InfiniteMemoryBand, stdin: &mut I) {
         for c in self.0.iter() {
             match c {
                 Move(i) => band.move_head(*i),
@@ -174,13 +174,14 @@ impl FromStr for SourceCode {
 
 #[cfg(test)]
 mod test {
+    const NEG1: u8 = u8::MAX;
     use super::*;
     #[test]
     fn test_from_str() {
         let source = "+-->><<<+++---";
         let code = source.parse::<SourceCode>();
 
-        let expected = Ok(SourceCode(vec![Add(-1), Move(-1), Add(0)]));
+        let expected = Ok(SourceCode(vec![Add(NEG1), Move(-1), Add(0)]));
 
         assert_eq!(code, expected);
     }
@@ -249,7 +250,7 @@ mod test {
 
         let expected = Ok(SourceCode(vec![
             Add(1),
-            Loop(SourceCode(vec![Add(-2)])),
+            Loop(SourceCode(vec![Add(NEG1-1)])),
             Add(1),
         ]));
 
@@ -262,9 +263,9 @@ mod test {
 
         let expected1 = Ok(SourceCode(vec![
             Add(1),
-            Loop(SourceCode(vec![Add(-2)])),
+            Loop(SourceCode(vec![Add(NEG1-1)])),
             Add(2),
-            Loop(SourceCode(vec![Add(-2)])),
+            Loop(SourceCode(vec![Add(NEG1-1)])),
             Add(1),
         ]));
 
@@ -273,10 +274,10 @@ mod test {
         let expected2 = Ok(SourceCode(vec![
                                       Add(1),
                                       Loop(SourceCode(vec![
-                                                      Add(-1),
+                                                      Add(NEG1),
                                                       Loop(SourceCode(vec![
                                                                       Print,
-                                                                      Add(-1),
+                                                                      Add(NEG1),
                                                       ])),
                                                       Add(1)
                                       ])),

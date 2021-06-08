@@ -24,7 +24,7 @@ pub fn run_file(s: String) -> Result<(), Box<dyn Error>> {
 
 pub fn run_interpreter() {
     println!("Welcome to the rsbrainfuck interpreter. Type 'exit' to exit the interpreter");
-    let mut band = MemoryBand::new();
+    let mut band = InfiniteMemoryBand::new();
     let mut stdin = InputBuffer::new();
     loop {
         let mut string = String::new();
