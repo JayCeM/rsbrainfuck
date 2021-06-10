@@ -6,19 +6,20 @@
 
 use crate::memoryband::*;
 use crate::sourcecode::*;
-use crate::inputbuffer::*;
+use crate::input::*;
 use std::error::Error;
 use std::fs;
 use std::io;
 
 pub mod memoryband;
 pub mod sourcecode;
-pub mod inputbuffer;
+pub mod input;
+pub mod output;
 
 pub fn run_file(s: String) -> Result<(), Box<dyn Error>> {
     let code = fs::read_to_string(s)?.parse::<SourceCode>()?;
     let mut stdin = InputBuffer::new();
-    code.run(&mut stdin);
+    code.run::<_, InfiniteMemoryBand>(&mut stdin);
     Ok(())
 }
 

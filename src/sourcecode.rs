@@ -1,5 +1,5 @@
 use super::memoryband::*;
-//use super::inputbuffer::InputBuffer;
+use super::input::Input;
 //use char_stream::CharStream;
 use std::str::FromStr;
 use BfCommand::*;
@@ -27,8 +27,10 @@ impl SourceCode {
     ///
     /// Pass any Iterator over [`char`] as stdin to the method, 
     /// use [`super::inputbuffer::InputBuffer`] for the standard StdIn-behavior.
-    pub fn run<I: Iterator<Item=char>>(&self, stdin: &mut I) {
-        let mut band = InfiniteMemoryBand::new();
+    pub fn run<I, M>(&self, stdin: &mut I)
+    where I: Input,
+          M: MemoryBand {
+        let mut band = M::new();
         self.run_on_band(&mut band, stdin);
     }
 
@@ -36,7 +38,9 @@ impl SourceCode {
     ///
     /// Pass any Iterator over [`char`] as stdin to the method, 
     /// use [`super::inputbuffer::InputBuffer`] for the standard StdIn-behavior.
-    pub fn run_on_band<I: Iterator<Item=char>>(&self, band: &mut InfiniteMemoryBand, stdin: &mut I) {
+    pub fn run_on_band<I,M>(&self, band: &mut M, stdin: &mut I)
+    where I: Input,
+          M: MemoryBand {
         self.run_loop_band(band, stdin);
         println!("");
     }
@@ -46,14 +50,16 @@ impl SourceCode {
     /// newline symbol at the end of the computaton.
     /// Leaving the newline out caused problems where the stdout would be presented delayed to the
     /// user.
-    fn run_loop_band<I: Iterator<Item=char>>(&self, band: &mut InfiniteMemoryBand, stdin: &mut I) {
+    fn run_loop_band<I,M>(&self, band: &mut M, stdin: &mut I)
+    where I: Input,
+          M: MemoryBand {
         for c in self.0.iter() {
             match c {
                 Move(i) => band.move_head(*i),
                 Add(i) => band.add(*i),
                 Print => print!("{}", band.read() as char),
                 Read => {
-                        match stdin.next() {
+                        match stdin.read_char() {
                         Some(c) => band.write(c as u8),
                         None => band.write(0),
                     }

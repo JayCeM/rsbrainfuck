@@ -1,6 +1,16 @@
 use std::io::*;
-//use std::str::Chars;
 use std::collections::VecDeque;
+
+/// Fnacy type-alias for trait Iterator<Item=char>
+pub trait Input {
+    fn read_char(&mut self) -> Option<char>;
+}
+
+impl<I: Iterator<Item=char>> Input for I {
+    fn read_char(&mut self) -> Option<char> {
+        self.next()
+    }
+}
 
 pub struct InputBuffer {
     buffer: VecDeque<char>,
