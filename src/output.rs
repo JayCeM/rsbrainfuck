@@ -9,3 +9,9 @@ impl Output for StdOutput {
         print!("{}", c);
     }
 }
+
+impl Output for Vec<char> {
+    fn write_char(&mut self, c: char) {
+        self.push(c);
+    }
+}

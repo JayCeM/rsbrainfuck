@@ -1,5 +1,6 @@
 use super::memoryband::*;
 use super::input::Input;
+use super::output::Output;
 //use char_stream::CharStream;
 use std::str::FromStr;
 use BfCommand::*;
@@ -27,21 +28,23 @@ impl SourceCode {
     ///
     /// Pass any Iterator over [`char`] as stdin to the method, 
     /// use [`super::inputbuffer::InputBuffer`] for the standard StdIn-behavior.
-    pub fn run<I, M>(&self, stdin: &mut I)
+    pub fn run<I,O,M>(&self, stdin: &mut I, stdout: &mut O)
     where I: Input,
+          O: Output,
           M: MemoryBand {
         let mut band = M::new();
-        self.run_on_band(&mut band, stdin);
+        self.run_on_band(&mut band, stdin, stdout);
     }
 
     /// Runs the brainfuck source code on the given `band` memoryband.
     ///
     /// Pass any Iterator over [`char`] as stdin to the method, 
     /// use [`super::inputbuffer::InputBuffer`] for the standard StdIn-behavior.
-    pub fn run_on_band<I,M>(&self, band: &mut M, stdin: &mut I)
+    pub fn run_on_band<I,O,M>(&self, band: &mut M, stdin: &mut I, stdout: &mut O)
     where I: Input,
+          O: Output,
           M: MemoryBand {
-        self.run_loop_band(band, stdin);
+        self.run_loop_band(band, stdin, stdout);
         println!("");
     }
 
@@ -50,14 +53,15 @@ impl SourceCode {
     /// newline symbol at the end of the computaton.
     /// Leaving the newline out caused problems where the stdout would be presented delayed to the
     /// user.
-    fn run_loop_band<I,M>(&self, band: &mut M, stdin: &mut I)
+    fn run_loop_band<I,O,M>(&self, band: &mut M, stdin: &mut I, stdout: &mut O)
     where I: Input,
+          O: Output,
           M: MemoryBand {
         for c in self.0.iter() {
             match c {
                 Move(i) => band.move_head(*i),
                 Add(i) => band.add(*i),
-                Print => print!("{}", band.read() as char),
+                Print => stdout.write_char(band.read() as char),
                 Read => {
                         match stdin.read_char() {
                         Some(c) => band.write(c as u8),
@@ -66,7 +70,7 @@ impl SourceCode {
                 },
                 Loop(code) => {
                     while band.read() != 0 {
-                        code.run_loop_band(band, stdin);
+                        code.run_loop_band(band, stdin, stdout);
                     }
                 }
             }
