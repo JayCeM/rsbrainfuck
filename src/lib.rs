@@ -8,6 +8,7 @@ use crate::memoryband::*;
 use crate::sourcecode::*;
 use crate::input::*;
 use crate::output::*;
+use crate::args::*;
 use std::error::Error;
 use std::fs;
 use std::io;
@@ -16,18 +17,21 @@ pub mod memoryband;
 pub mod sourcecode;
 pub mod input;
 pub mod output;
+pub mod args;
 
-pub fn run_file(s: String) -> Result<(), Box<dyn Error>> {
-    let code = fs::read_to_string(s)?.parse::<SourceCode>()?;
+fn run_file<M>(args: Args) -> Result<(), Box<dyn Error>> 
+    where M: MemoryBand {
+    let code = fs::read_to_string(args.input_path.into_os_string())?.parse::<SourceCode>()?;
     let mut stdin = InputBuffer::new();
     let mut stdout = StdOutput();
-    code.run::<_, StdOutput, InfiniteMemoryBand>(&mut stdin, &mut stdout);
+    code.run::<_, StdOutput, M>(&mut stdin, &mut stdout);
     Ok(())
 }
 
-pub fn run_interpreter() {
+fn run_interpreter<M>() 
+    where M: MemoryBand {
     println!("Welcome to the rsbrainfuck interpreter. Type 'exit' to exit the interpreter");
-    let mut band = InfiniteMemoryBand::new();
+    let mut band = M::new();
     let mut stdin = InputBuffer::new();
     let mut stdout = StdOutput();
     loop {
@@ -44,9 +48,27 @@ pub fn run_interpreter() {
         match string.parse::<SourceCode>() {
             Ok(code) => {
                 print!("[out]: ");
-                code.run_on_band(&mut band, &mut stdin, &mut stdout);
+                code.run_on_band::<_,_,M>(&mut band, &mut stdin, &mut stdout);
             },
             Err(e) => eprintln!("{}", e),
         };
     }
 }
+
+pub fn run(args: Args) -> Result<(), Box<dyn Error>> {
+    if args.interactive {
+        if args.infinite_memory {
+            run_interpreter::<InfiniteMemoryBand>();
+        } else {
+            run_interpreter::<FiniteMemoryBand>();
+        }
+        Ok(())
+    } else {
+        if args.infinite_memory {
+            run_file::<InfiniteMemoryBand>(args)
+        } else {
+            run_file::<FiniteMemoryBand>(args)
+        }
+    }
+}
+

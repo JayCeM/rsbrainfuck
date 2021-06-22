@@ -1,12 +1,9 @@
-use std::env;
-fn main() {
-    let mut args = env::args().skip(1);
-    match args.next() {
-        Some(s) => {
-            if let Err(e) = rsbrainfuck::run_file(s) {
-                eprintln!("Fatal Error: {}", e);
-            }
-        }
-        None => rsbrainfuck::run_interpreter(),
-    };
+use rsbrainfuck::args::*;
+//use std::env;
+use std::error::Error;
+use structopt::StructOpt;
+fn main() -> Result<(), Box<dyn Error>> {
+    let args = Args::from_args();
+    rsbrainfuck::run(args)
 }
+

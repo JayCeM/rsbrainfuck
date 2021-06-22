@@ -8,4 +8,5 @@ license = "GPL-3.0-only"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-char_stream = "0.1.8"
+#char_stream = "0.1.8"
+structopt = "0.3.21"
